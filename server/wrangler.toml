@@ -1,18 +1,42 @@
-#: schema node_modules/wrangler/config-schema.json
-name = "server"
-main = "src/index.ts"
-compatibility_date = "2025-09-24"
-compatibility_flags = [ "nodejs_compat" ]
+name = "server"  
+# Nama Cloudflare Worker.
 
-workers_dev = true
+main = "src/index.ts"  
+# File entry point yang digunakan Worker.
 
-[[durable_objects.bindings]]
-name = "GroceriesDurableObjects"
-class_name = "GroceriesDurableObject"
+compatibility_date = "2025-09-24"  
+# Tanggal versi kompatibilitas API Cloudflare yang dipilih.
 
-[[migrations]]
-tag = "v1"
-new_sqlite_classes = ["GroceriesDurableObject"]
+compatibility_flags = [ "nodejs_compat" ]  
+# Mengaktifkan fitur kompatibilitas Node.js di Cloudflare Worker.
 
-[observability]
-enabled = true
+workers_dev = true  
+# Mengaktifkan mode pengembangan di workers.dev.
+
+[[durable_objects.bindings]]  
+# Binding Durable Object ke Worker.
+
+name = "GroceriesDurableObjects"  
+# Nama binding yang digunakan untuk mengakses Durable Object.
+
+class_name = "GroceriesDurableObject"  
+# Nama class Durable Object yang didefinisikan dalam kode sumber.
+
+[[migrations]]  
+# Konfigurasi migrasi untuk Durable Object.
+
+tag = "v1"  
+# Tag atau versi migrasi. Perlu ditingkatkan setiap kali struktur DO berubah.
+
+new_classes = ["GroceriesDurableObject"]  
+# Daftar class DO baru yang akan dibuat oleh sistem.
+
+[observability]  
+# Pengaturan fitur observability (monitoring & logging).
+
+enabled = true  
+# Mengaktifkan observability.
+
+
+
+
