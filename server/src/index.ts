@@ -1,10 +1,10 @@
-import { createMergeableStore } from "tinybase"; 
+import { createMergeableStore } from "tinybase";
 // import untuk bikin TinyBase store yang bisa merge (dipakai buat sync)
 
-import { createDurableObjectStoragePersister } from "tinybase/persisters/persister-durable-object-storage"; 
+import { createDurableObjectStoragePersister } from "tinybase/persisters/persister-durable-object-storage";
 // import persister supaya data TinyBase disimpan ke storage Durable Object
 
-import { WsServerDurableObject } from "tinybase/synchronizers/synchronizer-ws-server-durable-object"; 
+import { WsServerDurableObject } from "tinybase/synchronizers/synchronizer-ws-server-durable-object";
 // import class Durable Object bawaan TinyBase yang sudah support WebSocket
 
 
@@ -54,36 +54,14 @@ export class GroceriesDurableObject extends WsServerDurableObject {
   }
 
   async fetch(request: Request): Promise<Response> {
-    // fetch handler khusus untuk Durable Object ini
+    // fetch handler Durable Object
 
-    const url = new URL(request.url);
-    // parsing URL dari request
-
-    if (url.pathname.endsWith("/index-data")) {
-      // endpoint khusus buat ambil data mentah (JSON)
-
-      await this.persister.load();
-      // pastiin data terbaru sudah ke-load
-
-      return new Response(
-        JSON.stringify({
-          tables: this.store.getTables(),
-          // ambil semua tabel TinyBase
-
-          values: this.store.getValues(),
-          // ambil values global TinyBase
-        }),
-        { headers: { "content-type": "application/json" } }
-        // set response sebagai JSON
-      );
+    if (super.fetch) {
+      return await super.fetch(request);
     }
-
-    const response = await super.fetch?.(request);
-    return (
-      response ??
-      new Response("Not Found", { status: 404 })
-    );
-    // kalau bukan endpoint khusus, lempar ke handler WS bawaan
+    // Fallback if parent does not provide a fetch handler
+    return new Response("Not Implemented", { status: 501 });
+    // semua request langsung ditangani WebSocket synchronizer TinyBase
   }
 }
 
@@ -95,30 +73,11 @@ export default {
     const url = new URL(request.url);
     // parsing URL request
 
-    const upgrade = request.headers.get("Upgrade");
-    // ambil header Upgrade buat cek WebSocket
-
     const path = url.pathname.split("/").filter(Boolean);
     // pecah path URL jadi array tanpa string kosong
 
-    let storeId = "main";
-    // default storeId adalah "main"
-
-    if (path.length > 0) {
-      // kalau path tidak kosong
-
-      const last = path[path.length - 1];
-      // ambil segment terakhir dari URL
-
-      storeId =
-        last === "index-data"
-          ? path[path.length - 2] ?? "main"
-          : last;
-      // kalau endpoint index-data, storeId ambil dari segment sebelumnya
-    }
-
-    console.log("🟢 Incoming request for storeId:", storeId);
-    // log storeId biar kelihatan di wrangler tail
+    const storeId = path[path.length - 1] ?? "main";
+    // ambil segment terakhir sebagai storeId, default "main"
 
     const id = env.GroceriesDurableObjects.idFromName(storeId);
     // bikin Durable Object ID berdasarkan storeId
@@ -126,23 +85,7 @@ export default {
     const obj = env.GroceriesDurableObjects.get(id);
     // ambil instance Durable Object dari namespace
 
-    if (upgrade?.toLowerCase() === "websocket") {
-      // kalau request WebSocket
-
-      return obj.fetch(request);
-      // teruskan ke Durable Object
-    }
-
-    if (url.pathname.endsWith("/index-data")) {
-      // kalau request ambil data JSON
-
-      return obj.fetch(request);
-      // teruskan ke Durable Object
-    }
-
-    return new Response("TinyBase WS server running", {
-      headers: { "content-type": "text/plain" },
-    });
-    // response default kalau bukan WS atau index-data
+    return obj.fetch(request);
+    // semua request (termasuk WebSocket) diteruskan ke Durable Object
   },
 };
