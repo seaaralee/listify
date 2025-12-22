@@ -18,19 +18,21 @@ export class GroceriesDurableObject extends WsServerDurableObject {
   // variabel untuk nyimpen persister ke Durable Object storage
 
   constructor(ctx: DurableObjectState, env: any) {
-    // constructor dipanggil saat Durable Object dibuat
+    // constructor dipanggil saat Durable Object dibuat dan parameter env digunakan untuk mengakses konfigurasi environment Worker
 
     super(ctx, env);
     // wajib manggil constructor parent (WsServerDurableObject)
 
     this.store = createMergeableStore();
-    // inisialisasi TinyBase store
+    // inisialisasi TinyBase store yang menyimpan data aplikasi
 
     this.persister = createDurableObjectStoragePersister(
-      this.store,
-      this.ctx.storage
-    );
     // bikin persister supaya store disimpan ke storage DO
+      this.store,
+    // TinyBase store yang mau disimpan
+      this.ctx.storage
+    // storage Durable Object buat nyimpen data
+    );
 
     this.init();
     // panggil fungsi init buat load data & autosave
@@ -54,12 +56,12 @@ export class GroceriesDurableObject extends WsServerDurableObject {
   }
 
   async fetch(request: Request): Promise<Response> {
-    // fetch handler Durable Object
+    // fetch handler Durable Object yang menangani request masuk dari Worker
 
     if (super.fetch) {
       return await super.fetch(request);
     }
-    // Fallback if parent does not provide a fetch handler
+    // Mengecek apakah class induk (WsServerDurableObject) punya fetch handler 
     return new Response("Not Implemented", { status: 501 });
     // semua request langsung ditangani WebSocket synchronizer TinyBase
   }
@@ -74,16 +76,16 @@ export default {
     // parsing URL request
 
     const path = url.pathname.split("/").filter(Boolean);
-    // pecah path URL jadi array tanpa string kosong
+    // pecah path URL jadi array tanpa string kosong yang memecah path URL menjadi beberapa bagian agar dapat digunakan sebagai penentu tujuan request.
 
     const storeId = path[path.length - 1] ?? "main";
-    // ambil segment terakhir sebagai storeId, default "main"
+    // ambil segment terakhir sebagai storeId, default "main" untuk menentukan identitas store berdasarkan URL yang diakses
 
     const id = env.GroceriesDurableObjects.idFromName(storeId);
     // bikin Durable Object ID berdasarkan storeId
 
     const obj = env.GroceriesDurableObjects.get(id);
-    // ambil instance Durable Object dari namespace
+    // ambil instance Durable Object dari Cloudflare
 
     return obj.fetch(request);
     // semua request (termasuk WebSocket) diteruskan ke Durable Object
