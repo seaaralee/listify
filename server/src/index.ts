@@ -56,7 +56,7 @@ export class GroceriesDurableObject extends WsServerDurableObject {
   }
 
   async fetch(request: Request): Promise<Response> {
-    // fetch handler Durable Object yang menangani request masuk dari Worker
+    // fetch handler Durable Object yang menangani request masuk dari Worker kemudian mengeksekusi request, termasuk WebSocket message, dan mengembalikan response dan untuk sinkronisasi data
 
     if (super.fetch) {
       return await super.fetch(request);
@@ -70,7 +70,7 @@ export class GroceriesDurableObject extends WsServerDurableObject {
 
 export default {
   async fetch(request: Request, env: any) {
-    // fetch handler utama Worker (entry point)
+    // fetch handler utama Worker (entry point) untuk  menerima request dari client, menentukan store/DO mana yang harus diakses, lalu meneruskan request ke Durable Object.
 
     const url = new URL(request.url);
     // parsing URL request
